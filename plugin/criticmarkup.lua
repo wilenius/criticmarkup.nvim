@@ -1,13 +1,3 @@
-local function complete_criticmarkup(_, _, _)
-  return { "accept", "decline" }
-end
-
-vim.api.nvim_create_user_command("CriticMarkup", function(opts)
-  process(opts.args)
-end, {
-  nargs = 1,
-  complete = complete_criticmarkup
-})
 
 -- CriticMarkup patterns
 local patterns = {
@@ -120,3 +110,15 @@ vim.api.nvim_set_keymap(
   ":'<,'>CriticMarkup decline<CR>",
   { noremap = true, silent = true }
 )
+
+local function complete_criticmarkup(_, _, _)
+  return { "accept", "decline" }
+end
+
+vim.api.nvim_create_user_command("CriticMarkup", function(opts)
+  process(opts.args)
+end, {
+  nargs = 1,
+  complete = complete_criticmarkup
+})
+
