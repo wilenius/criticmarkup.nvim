@@ -41,7 +41,7 @@ local function process(args)
   local mode = vim.fn.mode()
 
   -- Check if the argument is valid
-  if args[1] ~= "accept" and args[1] ~= "decline" then
+  if args ~= "accept" and args ~= "decline" then
     print("Invalid argument. Use 'accept' or 'decline'")
     return
   end
@@ -56,13 +56,13 @@ local function process(args)
     local selected_lines = vim.fn.getline(start_row, end_row)
 
     -- Process the selected text based on the argument
-    if args[1] == "accept" then
+    if args == "accept" then
       for i, line in ipairs(selected_lines) do
-        process_accept(selected_lines[i])
+        selected_lines[i] = process_accept(line)
       end
-    elseif args[1] == "decline" then
+    elseif args == "decline" then
       for i, line in ipairs(selected_lines) do
-        process_decline(selected_lines[i])
+        selected_lines[i] = process_decline(line)
       end
     end
 
@@ -73,10 +73,10 @@ local function process(args)
     local current_line = vim.fn.getline(".")
 
     -- Process the current line based on the argument
-    if args[1] == "accept" then
-      process_accept(current_line)
-    elseif args[1] == "decline" then
-      process_decline(current_line)
+    if args == "accept" then
+      current_line = process_accept(current_line)
+    elseif args == "decline" then
+      current_line = process_decline(current_line)
     end
 
     -- Replace the current line with the modified text
