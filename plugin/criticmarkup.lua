@@ -3,7 +3,7 @@ local function complete_criticmarkup(_, _, _)
 end
 
 vim.api.nvim_create_user_command("CriticMarkup", function(opts)
-  require("criticmarkup.nvim").process(opts.args)
+  process(opts.args)
 end, {
   nargs = 1,
   complete = complete_criticmarkup
