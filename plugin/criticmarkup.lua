@@ -94,18 +94,6 @@ local function process(args)
   end
 end
 
--- Create the command
-vim.api.nvim_create_user_command(
-  "CriticMarkup",
-  function(args)
-    critic_markup_function(args)
-  end,
-  {
-    nargs = 1, -- Accept one argument ("accept" or "decline")
-    range = true, -- Allow using with visual selection or line ranges
-    desc = "Accept or decline CriticMarkup suggestions",
-  }
-)
 
 -- Set up mappings
 vim.api.nvim_set_keymap(
