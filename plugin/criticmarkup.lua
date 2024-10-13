@@ -1,11 +1,11 @@
 
 -- CriticMarkup patterns
 local patterns = {
-    deletion = "{--(.-)--}",
+    deletion = "{%-%-(.-)%-%-}",
     addition = "{%+%+(.-)%+%+}",
-    substitution = "{~~(.-)~>(.-)~~}",
-    highlight = "{==(.-)==}",
-    comment = "{>>(.-)<<}"
+    substitution = "{%~%~(.-)%~>(.-)%~%~}",
+    highlight = "{%=%=(.-)%=%=}",
+    comment = "{%>%>(.-)%<%<}"
 }
 
 -- accept CriticMarkup suggestions
@@ -22,8 +22,8 @@ local function process_accept(text)
     return text
 end
 
--- decline CriticMarkup suggestions
-local function process_decline(text)
+-- reject CriticMarkup suggestions
+local function process_reject(text)
     -- Retain deletions
     text = text:gsub(patterns.deletion, "%1")
     -- Do not add additions
@@ -41,8 +41,8 @@ local function process(args)
   local mode = vim.fn.mode()
 
   -- Check if the argument is valid
-  if args ~= "accept" and args ~= "decline" then
-    print("Invalid argument. Use 'accept' or 'decline'")
+  if args ~= "accept" and args ~= "reject" then
+    print("Invalid argument. Use 'accept' or 'reject'")
     return
   end
 
@@ -60,9 +60,9 @@ local function process(args)
       for i, line in ipairs(selected_lines) do
         selected_lines[i] = process_accept(line)
       end
-    elseif args == "decline" then
+    elseif args == "reject" then
       for i, line in ipairs(selected_lines) do
-        selected_lines[i] = process_decline(line)
+        selected_lines[i] = process_reject(line)
       end
     end
 
@@ -75,8 +75,8 @@ local function process(args)
     -- Process the current line based on the argument
     if args == "accept" then
       current_line = process_accept(current_line)
-    elseif args == "decline" then
-      current_line = process_decline(current_line)
+    elseif args == "reject" then
+      current_line = process_reject(current_line)
     end
 
     -- Replace the current line with the modified text
@@ -100,19 +100,19 @@ vim.api.nvim_set_keymap(
 )
 vim.api.nvim_set_keymap(
   "n",
-  "<LocalLeader>cd",
-  ":CriticMarkup decline<CR>",
+  "<LocalLeader>cr",
+  ":CriticMarkup reject<CR>",
   { noremap = true, silent = true }
 )
 vim.api.nvim_set_keymap(
   "v",
-  "<LocalLeader>cd",
-  ":'<,'>CriticMarkup decline<CR>",
+  "<LocalLeader>cr",
+  ":'<,'>CriticMarkup reject<CR>",
   { noremap = true, silent = true }
 )
 
 local function complete_criticmarkup(_, _, _)
-  return { "accept", "decline" }
+  return { "accept", "reject" }
 end
 
 vim.api.nvim_create_user_command("CriticMarkup", function(opts)
