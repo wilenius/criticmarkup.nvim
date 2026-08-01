@@ -8,4 +8,7 @@ vim.opt.rtp:append(".")
 vim.opt.rtp:append(plenary_dir)
 
 vim.cmd("runtime plugin/plenary.vim")
+-- Tests run with --noplugin, so source our own plugin file to get the default
+-- highlight groups.
+vim.cmd("runtime plugin/criticmarkup.lua")
 require("plenary.busted")

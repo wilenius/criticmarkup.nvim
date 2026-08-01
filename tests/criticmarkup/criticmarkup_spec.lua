@@ -150,4 +150,23 @@ describe("highlighting", function()
     local marks = vim.api.nvim_buf_get_extmarks(0, vim.api.nvim_create_namespace("criticmarkup"), 0, -1, {})
     assert.are.equal(6, #marks) -- two annotations x (open + content + close)
   end)
+
+  it("resets inherited attributes over the replacement of a substitution", function()
+    set_buf({ "the {~~bird~>condor~~} flew" })
+    cm.refresh(0)
+    local marks = vim.api.nvim_buf_get_extmarks(0, vim.api.nvim_create_namespace("criticmarkup"), 0, -1, {
+      details = true,
+    })
+    local reset
+    for _, mark in ipairs(marks) do
+      if mark[4].hl_group == "CriticIgnore" then
+        reset = mark
+      end
+    end
+    assert.is_not_nil(reset)
+    -- From "~>" through the closing "~~}", and below the marks that colour it.
+    assert.are.same({ 11, 21 }, { reset[3], reset[4].end_col - 1 })
+    assert.is_true(reset[4].priority < 110)
+    assert.is_true(vim.api.nvim_get_hl(0, { name = "CriticIgnore" }).nocombine)
+  end)
 end)

@@ -82,7 +82,10 @@ attached manually with `require("criticmarkup").attach()`.
 
 Highlight groups (all overridable): `CriticAddition` → `DiffAdd`,
 `CriticDeletion` → `DiffDelete`, `CriticHighlight` → `DiffText`,
-`CriticComment` → `Comment`, `CriticMarker` → `Delimiter`.
+`CriticComment` → `Comment`, `CriticMarker` → `Delimiter`. One more,
+`CriticIgnore`, carries no colour: it is `nocombine`, and is used to keep the
+replacement half of a substitution from inheriting the strikethrough that
+markdown reads its `~~` delimiters as.
 
 ## Tests
 

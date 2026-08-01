@@ -12,6 +12,9 @@ local function set_default_hl()
   hl(0, "CriticHighlight", { default = true, link = "DiffText" })
   hl(0, "CriticComment", { default = true, link = "Comment" })
   hl(0, "CriticMarker", { default = true, link = "Delimiter" })
+  -- Attribute reset: clears styling picked up from the syntax underneath an
+  -- annotation. Not a colour, so nothing to link.
+  hl(0, "CriticIgnore", { default = true, nocombine = true })
 end
 set_default_hl()
 vim.api.nvim_create_autocmd("ColorScheme", { group = group, callback = set_default_hl })

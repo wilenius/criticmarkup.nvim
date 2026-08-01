@@ -170,7 +170,7 @@ end
 
 -- Highlighting ---------------------------------------------------------
 
-local function extmark(bufnr, offsets, from, to, hl, conceal)
+local function extmark(bufnr, offsets, from, to, hl, conceal, priority)
   if to < from then
     return -- empty annotation body
   end
@@ -181,7 +181,7 @@ local function extmark(bufnr, offsets, from, to, hl, conceal)
     end_col = ecol + 1,
     hl_group = hl,
     conceal = conceal and "" or nil,
-    priority = 110, -- above treesitter (100)
+    priority = priority or 110, -- above treesitter (100)
   })
 end
 
@@ -190,6 +190,13 @@ local function decorate(bufnr, offsets, ann)
   if ann.kind == "substitution" and ann.sep then
     extmark(bufnr, offsets, ann.from, ann.from + 2, "CriticDeletion", conceal)
     extmark(bufnr, offsets, ann.from + 3, ann.sep - 1, "CriticDeletion", false)
+    -- A substitution's "~~" delimiters also read as a markdown strikethrough
+    -- run, so the markdown parser strikes the whole annotation through. Our
+    -- extmarks sit above it, but attributes are merged rather than replaced,
+    -- so the replacement would keep the strike; CriticIgnore is `nocombine`,
+    -- which drops whatever is underneath it. It sits below the marks carrying
+    -- the colours so those still apply.
+    extmark(bufnr, offsets, ann.sep, ann.to, "CriticIgnore", false, 109)
     extmark(bufnr, offsets, ann.sep, ann.sep + 1, "CriticMarker", false)
     extmark(bufnr, offsets, ann.sep + 2, ann.to - 3, "CriticAddition", false)
     extmark(bufnr, offsets, ann.to - 2, ann.to, "CriticAddition", conceal)
