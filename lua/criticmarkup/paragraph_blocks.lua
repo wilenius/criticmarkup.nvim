@@ -17,6 +17,20 @@ local function is_editing()
   return mode == "i" or mode == "R"
 end
 
+local function characters(line, start_col, end_col)
+  local result = {}
+  local col = start_col
+  while col < end_col do
+    local char = line:sub(col + 1):match("^[%z\1-\127\194-\244][\128-\191]*")
+    if not char then
+      break
+    end
+    result[#result + 1] = { col = col, end_col = col + #char, char = char }
+    col = col + #char
+  end
+  return result
+end
+
 local function scan(lines)
   local blocks = {}
   local row = 1
@@ -30,19 +44,25 @@ local function scan(lines)
       end
 
       local col = lines[row]:find("%S")
+      local start_col, end_col
       while col do
-        local from, to = lines[row]:find("%[s%*?: [^%]]-%]", col)
+        local from, to = lines[row]:find("%[s%*?:%s*[^%]]-%]", col)
         if from ~= col then
           break
         end
+        start_col = start_col or from - 1
+        end_col = to
+        col = to + 1
+      end
+      if start_col then
         blocks[#blocks + 1] = {
           row = paragraph_start,
-          start_col = from - 1,
-          end_col = to,
+          start_col = start_col,
+          end_col = end_col,
+          characters = characters(lines[row], start_col, end_col),
           paragraph_start = paragraph_start,
           paragraph_end = paragraph_end,
         }
-        col = to + 1
       end
 
       row = paragraph_end + 2
@@ -83,7 +103,19 @@ function M.update(bufnr, editing)
     local active = cursor_row
       and cursor_row >= block.paragraph_start
       and cursor_row <= block.paragraph_end
-    if not active then
+    if active then
+      -- Markdown parses adjacent blocks as reference links and may conceal any
+      -- part of them. Literal replacements above Tree-sitter's priority keep
+      -- every character visible and editable.
+      for _, character in ipairs(block.characters) do
+        vim.api.nvim_buf_set_extmark(bufnr, ns, block.row, character.col, {
+          end_row = block.row,
+          end_col = character.end_col,
+          conceal = character.char,
+          priority = 200,
+        })
+      end
+    else
       vim.api.nvim_buf_set_extmark(bufnr, ns, block.row, block.start_col, {
         end_row = block.row,
         end_col = block.end_col,

@@ -14,6 +14,16 @@ local function paragraph_marks()
   return vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, { details = true })
 end
 
+local function revealed_text(marks, row)
+  local chars = {}
+  for _, mark in ipairs(marks) do
+    if mark[2] == row and mark[4].conceal ~= "" then
+      chars[#chars + 1] = mark[4].conceal
+    end
+  end
+  return table.concat(chars)
+end
+
 describe("accept at cursor", function()
   it("keeps addition text", function()
     set_buf({ "one {++added++} word" })
@@ -190,15 +200,18 @@ describe("paragraph blocks", function()
 
   it("conceals adjacent supported blocks at a paragraph start", function()
     cm.setup({ paragraph_blocks = true })
-    set_buf({ "  [s: draft][s*: review] Text" })
+    set_buf({ "  [s:draft][s*:review] Text" })
     cm.refresh(0)
 
     local marks = paragraph_marks()
-    assert.are.equal(2, #marks)
-    assert.are.same({ 0, 2, 12 }, { marks[1][2], marks[1][3], marks[1][4].end_col })
-    assert.are.same({ 0, 12, 24 }, { marks[2][2], marks[2][3], marks[2][4].end_col })
+    assert.are.equal(1, #marks)
+    assert.are.same({ 0, 2, 22 }, { marks[1][2], marks[1][3], marks[1][4].end_col })
     assert.are.equal("", marks[1][4].conceal)
-    assert.are.equal("", marks[2][4].conceal)
+
+    require("criticmarkup.paragraph_blocks").update(0, true)
+    marks = paragraph_marks()
+    assert.are.equal(20, #marks)
+    assert.are.equal("[s:draft][s*:review]", revealed_text(marks, 0))
   end)
 
   it("reveals blocks only for the paragraph being edited", function()
@@ -214,14 +227,16 @@ describe("paragraph blocks", function()
     vim.api.nvim_win_set_cursor(0, { 2, 3 })
     vim.api.nvim_exec_autocmds("InsertEnter", { buffer = 0 })
     local marks = paragraph_marks()
-    assert.are.equal(1, #marks)
-    assert.are.equal(3, marks[1][2])
+    assert.are.equal(11, #marks)
+    assert.are.equal("[s: first]", revealed_text(marks, 0))
+    assert.are.same({ 3, "" }, { marks[11][2], marks[11][4].conceal })
 
     vim.api.nvim_win_set_cursor(0, { 4, 5 })
     vim.api.nvim_exec_autocmds("CursorMovedI", { buffer = 0 })
     marks = paragraph_marks()
-    assert.are.equal(1, #marks)
-    assert.are.equal(0, marks[1][2])
+    assert.are.equal(13, #marks)
+    assert.are.same({ 0, "" }, { marks[1][2], marks[1][4].conceal })
+    assert.are.equal("[s*: second]", revealed_text(marks, 3))
 
     vim.api.nvim_exec_autocmds("InsertLeave", { buffer = 0 })
     assert.are.equal(2, #paragraph_marks())
