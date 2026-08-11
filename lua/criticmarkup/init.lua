@@ -3,6 +3,7 @@
 local M = {}
 
 local ns = vim.api.nvim_create_namespace("criticmarkup")
+local paragraph_blocks = require("criticmarkup.paragraph_blocks")
 
 M.config = {
   highlight = true,
@@ -11,6 +12,8 @@ M.config = {
   conceal = true,
   filetypes = { "markdown", "pandoc", "text" },
   default_mappings = true,
+  -- Non-standard leading [s: ...] and [s*: ...] paragraph metadata.
+  paragraph_blocks = false,
 }
 
 -- Lua patterns for the five CriticMarkup annotation types. All delimiters
@@ -213,6 +216,7 @@ function M.refresh(bufnr)
   if bufnr == nil or bufnr == 0 then
     bufnr = vim.api.nvim_get_current_buf()
   end
+  paragraph_blocks.refresh(bufnr, M.config.paragraph_blocks)
   vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
   if not M.config.highlight then
     return
@@ -341,6 +345,7 @@ function M.attach(bufnr)
     return
   end
   vim.b[bufnr].criticmarkup = true
+  paragraph_blocks.attach(bufnr)
   vim.api.nvim_create_autocmd({ "TextChanged", "InsertLeave" }, {
     group = vim.api.nvim_create_augroup("criticmarkup_buf_" .. bufnr, { clear = true }),
     buffer = bufnr,

@@ -9,6 +9,11 @@ local function get_buf()
   return vim.api.nvim_buf_get_lines(0, 0, -1, false)
 end
 
+local function paragraph_marks()
+  local ns = vim.api.nvim_create_namespace("criticmarkup_paragraph_blocks")
+  return vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, { details = true })
+end
+
 describe("accept at cursor", function()
   it("keeps addition text", function()
     set_buf({ "one {++added++} word" })
@@ -168,5 +173,74 @@ describe("highlighting", function()
     assert.are.same({ 11, 21 }, { reset[3], reset[4].end_col - 1 })
     assert.is_true(reset[4].priority < 110)
     assert.is_true(vim.api.nvim_get_hl(0, { name = "CriticIgnore" }).nocombine)
+  end)
+end)
+
+describe("paragraph blocks", function()
+  after_each(function()
+    cm.setup({ paragraph_blocks = false })
+  end)
+
+  it("is disabled by default", function()
+    cm.setup({ paragraph_blocks = false })
+    set_buf({ "[s: draft] Text" })
+    cm.refresh(0)
+    assert.are.equal(0, #paragraph_marks())
+  end)
+
+  it("conceals adjacent supported blocks at a paragraph start", function()
+    cm.setup({ paragraph_blocks = true })
+    set_buf({ "  [s: draft][s*: review] Text" })
+    cm.refresh(0)
+
+    local marks = paragraph_marks()
+    assert.are.equal(2, #marks)
+    assert.are.same({ 0, 2, 12 }, { marks[1][2], marks[1][3], marks[1][4].end_col })
+    assert.are.same({ 0, 12, 24 }, { marks[2][2], marks[2][3], marks[2][4].end_col })
+    assert.are.equal("", marks[1][4].conceal)
+    assert.are.equal("", marks[2][4].conceal)
+  end)
+
+  it("reveals blocks only for the paragraph being edited", function()
+    cm.setup({ paragraph_blocks = true })
+    set_buf({
+      "[s: first] First line",
+      "continued here",
+      "",
+      "[s*: second] Other paragraph",
+    })
+    cm.attach(0)
+
+    vim.api.nvim_win_set_cursor(0, { 2, 3 })
+    vim.api.nvim_exec_autocmds("InsertEnter", { buffer = 0 })
+    local marks = paragraph_marks()
+    assert.are.equal(1, #marks)
+    assert.are.equal(3, marks[1][2])
+
+    vim.api.nvim_win_set_cursor(0, { 4, 5 })
+    vim.api.nvim_exec_autocmds("CursorMovedI", { buffer = 0 })
+    marks = paragraph_marks()
+    assert.are.equal(1, #marks)
+    assert.are.equal(0, marks[1][2])
+
+    vim.api.nvim_exec_autocmds("InsertLeave", { buffer = 0 })
+    assert.are.equal(2, #paragraph_marks())
+  end)
+
+  it("leaves notes and non-leading blocks untouched", function()
+    cm.setup({ paragraph_blocks = true })
+    set_buf({
+      "[note: ignore][s: not-leading] First",
+      "",
+      "[s: yes][note: ignore][s*: after-note] Second",
+      "still has [note: inline] content",
+      "",
+      "Plain [s: inline] text",
+    })
+    cm.refresh(0)
+
+    local marks = paragraph_marks()
+    assert.are.equal(1, #marks)
+    assert.are.same({ 2, 0, 8 }, { marks[1][2], marks[1][3], marks[1][4].end_col })
   end)
 end)

@@ -19,6 +19,8 @@ Features:
   visual selection / command range. Annotations may span lines.
 - Jump between annotations.
 - Operators and visual mappings for creating annotations.
+- Optional concealment for non-standard leading paragraph blocks such as
+  `[s: draft]` and `[s*: important]`.
 
 Requires Neovim ≥ 0.9.
 
@@ -70,8 +72,17 @@ require("criticmarkup").setup({
   conceal = true,
   filetypes = { "markdown", "pandoc", "text" },
   default_mappings = true,
+  -- Opt in to non-standard [s: ...] and [s*: ...] paragraph blocks.
+  paragraph_blocks = false,
 })
 ```
+
+When `paragraph_blocks` is enabled, consecutive `[s: ...]` and `[s*: ...]`
+blocks at the start of a paragraph are concealed. In Insert or Replace mode,
+they are shown only while the cursor is within that paragraph. Paragraphs are
+separated by blank lines. Other bracketed forms, including `[note: ...]`, are
+left untouched. Like delimiter concealment, this respects Neovim's
+`conceallevel` and `concealcursor` options.
 
 With `default_mappings = false`, map the Lua API yourself:
 `accept()`, `reject()`, `accept_range(l1, l2)`, `reject_range(l1, l2)`,
